@@ -6,7 +6,7 @@ const commands = require('./commands');
 const monkeypatchMessages = require('./monkeypatchMessages.js');
 const injectAutocomplete = require('./injectAutocomplete.js');
 
-module.exports = class Commands extends Plugin {
+const commandsPlugin =  {
   async startPlugin () {
     Object.values(commands).forEach(command => powercord.api.commands.registerCommand(command));
 
@@ -35,7 +35,7 @@ module.exports = class Commands extends Plugin {
 
       return args;
     }, true);
-  }
+  },
 
   pluginWillUnload () {
     Object.values(commands).forEach(command => powercord.api.commands.unregisterCommand(command.command));
@@ -45,3 +45,8 @@ module.exports = class Commands extends Plugin {
     uninject('pc-commands-slowmode');
   }
 };
+
+module.exports = () => {
+  commandsPlugin.startPlugin();
+  return commandsPlugin.pluginWillUnload;
+}
