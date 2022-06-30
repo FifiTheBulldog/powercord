@@ -1,4 +1,3 @@
-const { Plugin } = require('powercord/entities');
 const { getModule } = require('powercord/webpack');
 const { inject, uninject } = require('powercord/injector');
 
@@ -46,7 +45,7 @@ const commandsPlugin =  {
   }
 };
 
-module.exports = () => {
-  commandsPlugin.startPlugin();
+module.exports = async () => {
+  await commandsPlugin.startPlugin();
   return commandsPlugin.pluginWillUnload;
 }

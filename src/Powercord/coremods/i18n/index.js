@@ -1,7 +1,6 @@
 const { React, getModule, getModuleByDisplayName, i18n: { Messages } } = require('powercord/webpack');
 const { Card } = require('powercord/components');
 const { inject, uninject } = require('powercord/injector');
-const { Plugin } = require('powercord/entities');
 const { I18N_WEBSITE } = require('powercord/constants');
 
 const strings = require('../../../../i18n');
@@ -9,7 +8,7 @@ const strOverrides = require('../../../../i18n/overrides');
 
 const totalStrCount = Object.keys(strings['en-US']).length;
 
-module.exports = class I18n extends Plugin {
+const i18n = {
   async startPlugin () {
     const FluxSettingsLocale = await getModuleByDisplayName('FluxContainer(UserSettingsLocale)', true, true);
     // noinspection JSPotentiallyInvalidConstructorUsage
@@ -72,9 +71,14 @@ module.exports = class I18n extends Plugin {
       };
       return res;
     });
-  }
+  },
 
   pluginWillUnload () {
     uninject('pc-i18n-psst');
   }
 };
+
+module.exports = async () => {
+  await i18n.startPlugin();
+  return i18n.pluginWillUnload;
+}
