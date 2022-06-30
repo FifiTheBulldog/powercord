@@ -5,38 +5,38 @@ const commands = require('./commands');
 const monkeypatchMessages = require('./monkeypatchMessages.js');
 const injectAutocomplete = require('./injectAutocomplete.js');
 
-const commandsPlugin =  {
-  async startPlugin () {
-    Object.values(commands).forEach(command => powercord.api.commands.registerCommand(command));
+const thisObj = {};
 
-    monkeypatchMessages.call(this);
-    injectAutocomplete.call(this);
+module.exports = async () => {
+  Object.values(commands).forEach(command => powercord.api.commands.registerCommand(command));
 
-    const slowmodeStore = await getModule([ 'getSlowmodeCooldownGuess' ]);
-    const chatRestrictions = await getModule([ 'applyChatRestrictions' ]);
-    inject('pc-commands-slowmode', chatRestrictions, 'applyChatRestrictions', (args) => {
-      const currentPrefix = powercord.api.commands.prefix;
-      const [ , , content, , channel ] = args;
+  monkeypatchMessages.call(thisObj);
+  injectAutocomplete.call(thisObj);
 
-      if (channel && channel.getGuildId() && slowmodeStore.getSlowmodeCooldownGuess(channel.id) > 0) {
-        const [ cmd, ...cmdArgs ] = content.slice(currentPrefix.length).split(' ');
-        const currentCommand = powercord.api.commands.find(c => [
-          c.command.toLowerCase(), ...(c.aliases?.map(alias => alias.toLowerCase()) || [])
-        ].includes(cmd));
+  const slowmodeStore = await getModule([ 'getSlowmodeCooldownGuess' ]);
+  const chatRestrictions = await getModule([ 'applyChatRestrictions' ]);
+  inject('pc-commands-slowmode', chatRestrictions, 'applyChatRestrictions', (args) => {
+    const currentPrefix = powercord.api.commands.prefix;
+    const [ , , content, , channel ] = args;
 
-        if (content && content.startsWith(currentPrefix) && currentCommand) {
-          const result = currentCommand.executor(cmdArgs);
-          if (result instanceof Promise || !result.send) {
-            delete args[4];
-          }
+    if (channel && channel.getGuildId() && slowmodeStore.getSlowmodeCooldownGuess(channel.id) > 0) {
+      const [ cmd, ...cmdArgs ] = content.slice(currentPrefix.length).split(' ');
+      const currentCommand = powercord.api.commands.find(c => [
+        c.command.toLowerCase(), ...(c.aliases?.map(alias => alias.toLowerCase()) || [])
+      ].includes(cmd));
+
+      if (content && content.startsWith(currentPrefix) && currentCommand) {
+        const result = currentCommand.executor(cmdArgs);
+        if (result instanceof Promise || !result.send) {
+          delete args[4];
         }
       }
+    }
 
-      return args;
-    }, true);
-  },
+    return args;
+  }, true);
 
-  pluginWillUnload () {
+  return () => {
     Object.values(commands).forEach(command => powercord.api.commands.unregisterCommand(command.command));
     uninject('pc-commands-textarea');
     uninject('pc-commands-plain-autocomplete');
@@ -44,8 +44,3 @@ const commandsPlugin =  {
     uninject('pc-commands-slowmode');
   }
 };
-
-module.exports = async () => {
-  await commandsPlugin.startPlugin();
-  return commandsPlugin.pluginWillUnload;
-}
